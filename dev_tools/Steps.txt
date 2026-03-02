@@ -1,0 +1,637 @@
+============================================================================================
+               🪜 SWAHILI FOOD SITE — COMPLETE BUILD STEPS
+          Build it small, commit often, understand everything
+          
+============================================================================================
+
+HOW TO USE:
+  [ ] = not done yet
+  [x] = done
+  Each step ends with a git commit — do NOT skip commits
+  Always be inside the correct folder before running commands
+
+============================================================================================
+PHASE 1 — PROJECT SETUP
+============================================================================================
+
+STEP 1: Create project and initialize Git
+------------------------------------------------------------
+[ ] 1a. Open Git Bash and run:
+            mkdir swahili_food_site
+            cd swahili_food_site
+            git init
+
+[ ] 1b. Create a README:
+            echo "# Swahili Food Site" > README.md
+
+[ ] 1c. First commit:
+            git add .
+            git commit -m "init: create project folder and README"
+
+------------------------------------------------------------
+STEP 2: Set up Django backend
+------------------------------------------------------------
+[ ] 2a. Create backend folder and virtual environment:
+            mkdir backend
+            cd backend
+            python -m venv venv
+            source venv/Scripts/activate        ← Git Bash (Windows)
+
+[ ] 2b. Install all dependencies:
+            pip install django djangorestframework djangorestframework-authtoken django-cors-headers
+
+[ ] 2c. Save dependencies to file:
+            pip freeze > requirements.txt
+
+[ ] 2d. Create Django project inside backend folder:
+            django-admin startproject swahilifood .
+            ⚠️ The dot (.) at the end is important — don't forget it
+
+[ ] 2e. Go back to root folder and commit:
+            cd ..
+            git add .
+            git commit -m "feat(backend): initialize Django project with all dependencies"
+
+------------------------------------------------------------
+STEP 3: Create Django apps
+------------------------------------------------------------
+[ ] 3a. Go into backend and activate venv:
+            cd backend
+            source venv/Scripts/activate
+
+[ ] 3b. Create all three apps:
+            python manage.py startapp users
+            python manage.py startapp dishes
+            python manage.py startapp comments
+
+[ ] 3c. Open swahilifood/settings.py and find INSTALLED_APPS.
+        Add these lines inside the list:
+            'rest_framework',
+            'rest_framework.authtoken',
+            'corsheaders',
+            'users',
+            'dishes',
+            'comments',
+
+[ ] 3d. In the same settings.py, find MIDDLEWARE and add
+        THIS LINE at the very top of the list:
+            'corsheaders.middleware.CorsMiddleware',
+
+[ ] 3e. At the bottom of settings.py add:
+            CORS_ALLOW_ALL_ORIGINS = True
+
+            AUTH_USER_MODEL = 'users.User'
+
+            REST_FRAMEWORK = {
+                'DEFAULT_AUTHENTICATION_CLASSES': [
+                    'rest_framework.authentication.TokenAuthentication',
+                ],
+            }
+
+[ ] 3f. Commit:
+            cd ..
+            git add .
+            git commit -m "feat(backend): create users, dishes, comments apps and configure settings"
+
+============================================================================================
+PHASE 2 — USER AUTHENTICATION
+============================================================================================
+
+STEP 4: Build the User model
+------------------------------------------------------------
+[ ] 4a. Open backend/users/models.py and replace with:
+
+            from django.contrib.auth.models import AbstractUser
+            from django.db import models
+
+            class User(AbstractUser):
+                ROLE_CHOICES = [('admin', 'Admin'), ('user', 'User')]
+                role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='user')
+
+[ ] 4b. Run migrations for the users app:
+            cd backend
+            source venv/Scripts/activate
+            python manage.py makemigrations users
+            python manage.py migrate
+
+[ ] 4c. Commit:
+            cd ..
+            git add .
+            git commit -m "feat(users): add custom User model extending AbstractUser with role field"
+
+------------------------------------------------------------
+STEP 5: Build User serializer
+------------------------------------------------------------
+[ ] 5a. Create backend/users/serializers.py and paste
+        the code from → users_serializers.py (Claude gave you)
+
+        Key things it does:
+        - password is write_only (never sent back to browser)
+        - role is read_only (user cannot self-assign admin)
+        - new users are always created as role='user'
+
+[ ] 5b. Commit:
+            git add .
+            git commit -m "feat(users): add UserSerializer with password hashing and role protection"
+
+------------------------------------------------------------
+STEP 6: Build User views
+------------------------------------------------------------
+[ ] 6a. Open backend/users/views.py and paste
+        the code from → users_views.py (Claude gave you)
+
+        Key things it does:
+        - /api/users/         → register (open to anyone)
+        - /api/users/login/   → login (returns token + role + username)
+        - /api/users/me/      → get current user profile (requires login)
+
+[ ] 6b. Create backend/users/urls.py (new file):
+
+            from rest_framework.routers import DefaultRouter
+            from .views import UserViewSet
+
+            router = DefaultRouter()
+            router.register(r'users', UserViewSet)
+            urlpatterns = router.urls
+
+[ ] 6c. Commit:
+            git add .
+            git commit -m "feat(users): add login, register and profile endpoints with token auth"
+
+------------------------------------------------------------
+STEP 7: Build main URLs file
+------------------------------------------------------------
+[ ] 7a. Open backend/swahilifood/urls.py and paste
+        the code from → main_urls.py (Claude gave you)
+
+        It connects:
+        - /api/ → users app
+        - /api/ → dishes app
+        - /api/ → comments app
+        - /api/auth-token/ → token endpoint
+        - /admin/ → Django admin
+
+[ ] 7b. Commit:
+            git add .
+            git commit -m "config(backend): connect all app URLs to main urls.py"
+
+------------------------------------------------------------
+STEP 8: Register models in Django admin
+------------------------------------------------------------
+[ ] 8a. Open backend/users/admin.py and replace with:
+
+            from django.contrib import admin
+            from .models import User
+            admin.site.register(User)
+
+[ ] 8b. Open backend/dishes/admin.py and replace with:
+
+            from django.contrib import admin
+            from .models import Dish
+            admin.site.register(Dish)
+
+[ ] 8c. Open backend/comments/admin.py and replace with:
+
+            from django.contrib import admin
+            from .models import Comment
+            admin.site.register(Comment)
+
+[ ] 8d. Commit:
+            git add .
+            git commit -m "chore(admin): register User, Dish and Comment models in Django admin"
+
+------------------------------------------------------------
+STEP 9: Create superuser and set admin role
+------------------------------------------------------------
+[ ] 9a. Run:
+            cd backend
+            source venv/Scripts/activate
+            python manage.py createsuperuser
+            → Username:  marvin
+            → Email:     (press Enter to skip)
+            → Password:  (your password — won't show as you type)
+
+[ ] 9b. Set admin role in Django shell:
+            python manage.py shell
+
+            Then type line by line:
+            from users.models import User
+            u = User.objects.get(username='marvin')
+            u.role = 'admin'
+            u.save()
+            print(u.role)    ← should print: admin
+            exit()
+
+[ ] 9c. Commit:
+            cd ..
+            git add .
+            git commit -m "chore: create superuser marvin and assign admin role"
+
+============================================================================================
+PHASE 3 — DISHES
+============================================================================================
+
+STEP 10: Build the Dish model
+------------------------------------------------------------
+[ ] 10a. Open backend/dishes/models.py and replace with:
+
+            from django.db import models
+
+            class Dish(models.Model):
+                name        = models.CharField(max_length=200)
+                description = models.TextField()
+                price       = models.DecimalField(max_digits=10, decimal_places=2)
+                created_at  = models.DateTimeField(auto_now_add=True)
+
+                def __str__(self):
+                    return self.name
+
+[ ] 10b. Run migrations:
+            cd backend
+            source venv/Scripts/activate
+            python manage.py makemigrations dishes
+            python manage.py migrate
+
+[ ] 10c. Commit:
+            cd ..
+            git add .
+            git commit -m "feat(dishes): add Dish model with name, description, price and timestamp"
+
+------------------------------------------------------------
+STEP 11: Build Dish serializer, views and URLs
+------------------------------------------------------------
+[ ] 11a. Create backend/dishes/serializers.py (new file):
+
+            from rest_framework import serializers
+            from .models import Dish
+
+            class DishSerializer(serializers.ModelSerializer):
+                class Meta:
+                    model = Dish
+                    fields = '__all__'
+
+[ ] 11b. Open backend/dishes/views.py and paste
+         the code from → dishes_views.py (Claude gave you)
+
+         Key thing: IsAdminRole permission class
+         - Anyone can READ dishes (GET)
+         - Only admin can CREATE, EDIT, DELETE dishes (POST, PUT, DELETE)
+
+[ ] 11c. Create backend/dishes/urls.py (new file):
+
+            from rest_framework.routers import DefaultRouter
+            from .views import DishViewSet
+
+            router = DefaultRouter()
+            router.register(r'dishes', DishViewSet)
+            urlpatterns = router.urls
+
+[ ] 11d. Commit:
+            git add .
+            git commit -m "feat(dishes): add Dish API — public read, admin-only write with IsAdminRole permission"
+
+------------------------------------------------------------
+STEP 12: Seed the database with dishes
+------------------------------------------------------------
+[ ] 12a. Start the server:
+            cd backend
+            source venv/Scripts/activate
+            python manage.py runserver
+
+[ ] 12b. Open http://localhost:8000/admin
+         Login with marvin credentials
+         Click Dishes → Add Dish and add all 5 dishes:
+
+         ┌─────────────────┬──────────────────────────────────────────────────┬───────┐
+         │ Name            │ Description                                      │ Price │
+         ├─────────────────┼──────────────────────────────────────────────────┼───────┤
+         │ Biryani         │ A fragrant spiced rice dish slow-cooked with     │ 650   │
+         │                 │ tender meat, infused with cardamom, cloves,      │       │
+         │                 │ and coastal spices — a crown jewel of Swahili   │       │
+         │                 │ cuisine.                                         │       │
+         ├─────────────────┼──────────────────────────────────────────────────┼───────┤
+         │ Pilau           │ Richly spiced rice simmered with beef and a      │ 500   │
+         │                 │ blend of cumin, coriander, and black pepper,     │       │
+         │                 │ a staple at every Swahili celebration.           │       │
+         ├─────────────────┼──────────────────────────────────────────────────┼───────┤
+         │ Samaki wa Nazi  │ Fresh coastal fish simmered in a creamy coconut  │ 750   │
+         │                 │ milk sauce with turmeric and ginger — the taste  │       │
+         │                 │ of the Indian Ocean on your plate.               │       │
+         ├─────────────────┼──────────────────────────────────────────────────┼───────┤
+         │ Viazi Karai     │ Golden crispy potatoes deep-fried in a spiced    │ 200   │
+         │                 │ chickpea batter, served as a beloved Mombasa     │       │
+         │                 │ street food snack.                               │       │
+         ├─────────────────┼──────────────────────────────────────────────────┼───────┤
+         │ Mishkaki        │ Juicy marinated beef skewers grilled over open   │ 350   │
+         │                 │ flame, seasoned with garlic, ginger, and         │       │
+         │                 │ coastal spices.                                  │       │
+         └─────────────────┴──────────────────────────────────────────────────┴───────┘
+
+[ ] 12c. Commit:
+            cd ..
+            git add .
+            git commit -m "chore(data): seed database with 5 authentic Swahili dishes"
+
+============================================================================================
+PHASE 4 — COMMENTS
+============================================================================================
+
+STEP 13: Build the Comment model
+------------------------------------------------------------
+[ ] 13a. Open backend/comments/models.py and paste
+         the code from → comments_models.py (Claude gave you)
+
+         Key things:
+         - ForeignKey to Dish (comment belongs to a dish)
+         - ForeignKey to User (comment belongs to a user)
+         - ordered by newest first (-created_at)
+
+[ ] 13b. Run migrations:
+            cd backend
+            source venv/Scripts/activate
+            python manage.py makemigrations comments
+            python manage.py migrate
+
+[ ] 13c. Commit:
+            cd ..
+            git add .
+            git commit -m "feat(comments): add Comment model linked to Dish and User with timestamp"
+
+------------------------------------------------------------
+STEP 14: Build Comment serializer, views and URLs
+------------------------------------------------------------
+[ ] 14a. Open backend/comments/serializers.py and paste
+         the code from → comments_serializers.py (Claude gave you)
+
+         Key thing: username field is read_only so browser
+         gets the author's name but can't fake it
+
+[ ] 14b. Open backend/comments/views.py and paste
+         the code from → comments_views.py (Claude gave you)
+
+         Key things:
+         - Anyone can READ comments
+         - Must be logged in to POST a comment
+         - Only comment owner OR admin can DELETE a comment
+
+[ ] 14c. Open backend/comments/urls.py and paste
+         the code from → comments_urls.py (Claude gave you)
+
+[ ] 14d. Commit:
+            git add .
+            git commit -m "feat(comments): add Comments API — public read, auth required to post, owner/admin can delete"
+
+============================================================================================
+PHASE 5 — REACT FRONTEND
+============================================================================================
+
+STEP 15: Set up React with Vite
+------------------------------------------------------------
+[ ] 15a. From the root of swahili_food_site:
+            npm create vite@latest frontend -- --template react
+            cd frontend
+            yarn install
+
+[ ] 15b. Install React Router and Axios:
+            yarn add react-router-dom axios
+
+[ ] 15c. Create the required folders:
+            mkdir src/components
+            mkdir src/api
+
+[ ] 15d. Commit:
+            cd ..
+            git add .
+            git commit -m "feat(frontend): initialize React Vite project and install react-router-dom and axios"
+
+------------------------------------------------------------
+STEP 16: Configure Vite proxy
+------------------------------------------------------------
+[ ] 16a. Open frontend/vite.config.js and replace with:
+
+            import { defineConfig } from 'vite'
+            import react from '@vitejs/plugin-react'
+
+            export default defineConfig({
+              plugins: [react()],
+              server: {
+                proxy: {
+                  '/api': 'http://localhost:8000',
+                }
+              }
+            })
+
+         ⚠️ This is what lets React talk to Django
+         Without this, API calls will fail with CORS errors
+
+[ ] 16b. Commit:
+            git add .
+            git commit -m "config(frontend): add Vite proxy to forward /api requests to Django on port 8000"
+
+------------------------------------------------------------
+STEP 17: Add global styles
+------------------------------------------------------------
+[ ] 17a. Replace src/index.css with → index.css (Claude gave you)
+         This sets: fonts, colour variables, base element styles
+
+[ ] 17b. Copy App.css into src/ → App.css (Claude gave you)
+         This sets: navbar, hero, cards, dish layout, comments, responsive
+
+[ ] 17c. Commit:
+            git add .
+            git commit -m "style: add coastal Swahili colour palette — Coconut Cream, Turmeric Gold, Roasted Orange, Clove Dark"
+
+------------------------------------------------------------
+STEP 18: Add API helper
+------------------------------------------------------------
+[ ] 18a. Create src/api/api.js and paste → api.js (Claude gave you)
+
+         This file contains all axios calls:
+         - loginUser()     → POST /api/users/login/
+         - registerUser()  → POST /api/users/
+         - getMe()         → GET  /api/users/me/
+         - getDishes()     → GET  /api/dishes/
+         - createDish()    → POST /api/dishes/
+         - updateDish()    → PUT  /api/dishes/:id/
+         - deleteDish()    → DELETE /api/dishes/:id/
+         - getComments()   → GET  /api/comments/?dish=:id
+         - createComment() → POST /api/comments/
+         - deleteComment() → DELETE /api/comments/:id/
+
+[ ] 18b. Commit:
+            git add .
+            git commit -m "feat(frontend): add api.js with axios calls for auth, dishes and comments"
+
+------------------------------------------------------------
+STEP 19: Build Login and Register pages
+------------------------------------------------------------
+[ ] 19a. Create src/components/Login.jsx → Login.jsx (Claude gave you)
+         - Saves token, username, role to localStorage on login
+         - Shows 'Karibu tena' greeting
+
+[ ] 19b. Create src/components/Register.jsx → Register.jsx (Claude gave you)
+         - Password confirmation check
+         - Shows backend error messages
+         - Redirects to login after success
+
+[ ] 19c. Commit:
+            git add .
+            git commit -m "feat(auth): add Login and Register pages with form validation and error handling"
+
+------------------------------------------------------------
+STEP 20: Build Dish components
+------------------------------------------------------------
+[ ] 20a. Create src/components/DishForm.jsx
+         (Use the DishForm.jsx Claude gave you)
+         - Admin-only form to add a new dish
+
+[ ] 20b. Create src/components/EditDishForm.jsx
+         (Use the EditDishForm.jsx Claude gave you)
+         - Admin-only inline edit form per dish card
+
+[ ] 20c. Create src/components/DishList.jsx → DishList.jsx (Claude gave you)
+         - Shows all dishes in a flex row layout
+         - Left panel: image + description + price
+         - Right panel: comments
+         - Admin sees Edit, Delete, Add Photo, Add Dish form
+         - Regular users see dishes and can comment
+         - Guests see a login/register prompt
+
+[ ] 20d. Commit:
+            git add .
+            git commit -m "feat(dishes): add DishList with admin controls, role-based UI and dish image upload"
+
+------------------------------------------------------------
+STEP 21: Build Comments component
+------------------------------------------------------------
+[ ] 21a. Create src/components/Comments.jsx → Comments.jsx (Claude gave you)
+         - Always visible in right panel of each dish card
+         - Shows comment count badge
+         - Logged in users can post comments
+         - Comment owners can delete their own comments
+         - Guests see a 'Sign in to comment' message
+
+[ ] 21b. Commit:
+            git add .
+            git commit -m "feat(comments): add Comments component with post, delete and real-time count badge"
+
+------------------------------------------------------------
+STEP 22: Build App.jsx — routing, navbar, hero, footer
+------------------------------------------------------------
+[ ] 22a. Replace src/App.jsx with → App.jsx (Claude gave you)
+
+         It contains:
+         - Navbar: clove dark background, gold brand name,
+                   shows username + role emoji when logged in,
+                   Login/Register links when logged out
+         - Home page: full-bleed hero with animated gradient,
+                      'Pwani ni Uhai' tagline,
+                      admin can upload banner photo
+         - Footer: clove dark strip with site name
+         - Routes: / → Home, /dishes → DishList,
+                   /login → Login, /register → Register
+
+[ ] 22b. Commit:
+            git add .
+            git commit -m "feat(frontend): add App.jsx with navbar, hero, footer and all routes"
+
+------------------------------------------------------------
+STEP 23: Update main.jsx entry point
+------------------------------------------------------------
+[ ] 23a. Make sure src/main.jsx contains:
+
+            import { StrictMode } from 'react'
+            import { createRoot } from 'react-dom/client'
+            import './index.css'
+            import App from './App.jsx'
+
+            createRoot(document.getElementById('root')).render(
+              <StrictMode>
+                <App />
+              </StrictMode>,
+            )
+
+[ ] 23b. Commit:
+            git add .
+            git commit -m "config(frontend): verify main.jsx entry point imports App and index.css"
+
+============================================================================================
+PHASE 6 — RUN THE FULL PROJECT
+============================================================================================
+
+STEP 24: Run both servers
+------------------------------------------------------------
+[ ] 24a. Open Terminal 1 — Django backend:
+            cd swahili_food_site/backend
+            source venv/Scripts/activate
+            python manage.py runserver
+            → Should say: Starting development server at http://127.0.0.1:8000/
+
+[ ] 24b. Open Terminal 2 — React frontend:
+            cd swahili_food_site/frontend
+            yarn dev
+            → Should say: Local: http://localhost:5173/
+
+[ ] 24c. Open browser at: http://localhost:5173
+
+[ ] 24d. Test the full flow:
+            → Home page loads with hero ✓
+            → Click Menu — dishes appear ✓
+            → Register a new account ✓
+            → Login — username appears in navbar ✓
+            → Post a comment on a dish ✓
+            → Login as marvin (admin) ✓
+            → Edit/Delete buttons appear ✓
+            → Add Photo button appears on dish cards ✓
+            → Upload Banner button appears on hero ✓
+
+------------------------------------------------------------
+STEP 25: Final commit and push to GitHub
+------------------------------------------------------------
+[ ] 25a. Make sure .gitignore exists in root with:
+            # Django
+            *.pyc
+            __pycache__/
+            db.sqlite3
+            .env
+            venv/
+
+            # React
+            node_modules/
+            dist/
+            .DS_Store
+
+[ ] 25b. Final commit:
+            git add .
+            git commit -m "feat: complete Swahili Food Site — auth, dishes, comments, role-based UI"
+
+[ ] 25c. Push to GitHub:
+            git remote add origin https://github.com/YOUR_USERNAME/swahili_food_site.git
+            git branch -M main
+            git push -u origin main
+
+============================================================================================
+                        🎉 PROJECT COMPLETE!
+============================================================================================
+
+SUMMARY OF WHAT WAS BUILT:
+  Backend (Django):
+  ✅ Custom User model with role (admin/user)
+  ✅ Token authentication
+  ✅ Register + Login + Profile endpoints
+  ✅ Dish CRUD — admin only write, public read
+  ✅ Comments — authenticated post, owner/admin delete
+  ✅ Django admin panel for all models
+
+  Frontend (React):
+  ✅ Coastal Swahili theme — Coconut Cream, Turmeric Gold, Roasted Orange, Clove Dark
+  ✅ Sticky navbar with role-aware display
+  ✅ Full-bleed hero with animated gradient
+  ✅ Dish cards with flex layout — info left, comments right
+  ✅ Image upload per dish (admin only)
+  ✅ Banner upload on hero (admin only)
+  ✅ Login + Register pages
+  ✅ Role-based UI — admin sees controls, users see dishes and can comment
+  ✅ Responsive — works on mobile
+
+============================================================================================
