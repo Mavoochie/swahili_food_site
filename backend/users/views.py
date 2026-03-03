@@ -12,10 +12,8 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
 
     def get_permissions(self):
-        # Anyone can register or login
         if self.action in ['create', 'login']:
             return [permissions.AllowAny()]
-        # Only admins can list/delete/update users
         return [permissions.IsAuthenticated()]
 
     @action(detail=False, methods=['post'])
@@ -34,6 +32,4 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
     def me(self, request):
-        """Return current user's profile including role."""
-        serializer = UserSerializer(request.user)
-        return Response(serializer.data)
+        return Response(UserSerializer(request.user).data)

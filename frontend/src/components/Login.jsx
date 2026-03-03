@@ -17,6 +17,7 @@ const Login = () => {
       const res = await loginUser({ username, password });
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('username', username);
+      localStorage.setItem('role', res.data.role);
       setIsError(false);
       setMessage('Login successful! Redirecting…');
       setTimeout(() => (window.location.href = '/dishes'), 1000);
@@ -77,9 +78,9 @@ const Login = () => {
         </form>
 
         <hr className="divider" />
-        <p className="login-footer">
-          Just browsing? <Link to="/dishes">View dishes</Link>
-        </p>
+       <p className="login-footer">
+            Just browsing? <Link to="/dishes">View dishes</Link> &nbsp;·&nbsp; Don't have an account? <Link to="/register">Sign up</Link>
+       </p>
       </div>
     </div>
   );

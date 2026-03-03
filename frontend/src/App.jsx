@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Link, NavLink, useNavigate } fr
 import DishList from './components/DishList';
 import Login from './components/Login';
 import './App.css';
+import Register from "./components/Register";
 
 function Navbar() {
   const navigate = useNavigate();
@@ -59,10 +60,12 @@ function Home() {
         </p>
         <div className="hero-actions">
           <Link to="/dishes" className="hero-cta">Browse Dishes</Link>
-          <label className="hero-upload-label">
-            🖼 {heroBg ? 'Change Banner' : 'Upload Banner'}
-            <input type="file" accept="image/*" onChange={handleHeroImage} />
-          </label>
+          {localStorage.getItem('role') === 'admin' && (
+            <label className="hero-upload-label">
+                🖼 {heroBg ? 'Change Banner' : 'Upload Banner'}
+                <input type="file" accept="image/*" onChange={handleHeroImage} />
+            </label>
+          )}
         </div>
       </div>
     </div>
@@ -77,6 +80,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/dishes" element={<DishList />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
       </Routes>
     </Router>
   );
