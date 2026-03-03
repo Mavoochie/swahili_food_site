@@ -1,35 +1,85 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React, { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Link, NavLink, useNavigate } from 'react-router-dom';
+import DishList from './components/DishList';
+import Login from './components/Login';
+import './App.css';
 
-function App() {
-  const [count, setCount] = useState(0)
+function Navbar() {
+  const navigate = useNavigate();
+  const token = localStorage.getItem('token');
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('username');
+    navigate('/login');
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <nav className="navbar">
+      <Link to="/" className="navbar-brand">
+        Swahili<span>Eats</span>
+      </Link>
+      <NavLink to="/">Home</NavLink>
+      <NavLink to="/dishes">Dishes</NavLink>
+      {token ? (
+        <button className="btn-logout" onClick={handleLogout}>Logout</button>
+      ) : (
+        <NavLink to="/login">Login</NavLink>
+      )}
+    </nav>
+  );
 }
 
-export default App
+function Home() {
+  const [heroBg, setHeroBg] = useState(null);
+
+  const handleHeroImage = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => setHeroBg(ev.target.result);
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <div className="hero">
+      {/* Background layer */}
+      {heroBg
+        ? <img src={heroBg} alt="Hero background" className="hero-bg-img" />
+        : <div className="hero-placeholder" />
+      }
+      <div className="hero-bg" />
+
+      {/* Content */}
+      <div className="hero-content">
+        <h1>Authentic <span>Swahili</span> Cuisine</h1>
+        <p>
+          Discover the rich coastal flavours of East Africa — from aromatic
+          biryanis to creamy coconut curries.
+        </p>
+        <div className="hero-actions">
+          <Link to="/dishes" className="hero-cta">Browse Dishes</Link>
+          <label className="hero-upload-label">
+            🖼 {heroBg ? 'Change Banner' : 'Upload Banner'}
+            <input type="file" accept="image/*" onChange={handleHeroImage} />
+          </label>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <Navbar />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/dishes" element={<DishList />} />
+        <Route path="/login" element={<Login />} />
+      </Routes>
+    </Router>
+  );
+}
+
+export default App;
