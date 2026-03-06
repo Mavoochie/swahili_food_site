@@ -2,6 +2,7 @@ import axios from 'axios';
 
 const API = axios.create({ baseURL: '/api/' });
 
+// Attach token automatically from localStorage
 API.interceptors.request.use((req) => {
   const token = localStorage.getItem('token');
   if (token) req.headers.Authorization = `Token ${token}`;
@@ -14,16 +15,57 @@ export const registerUser = (data)  => API.post('users/', data);
 export const getMe        = ()      => API.get('users/me/');
 
 // Dishes
-export const getDishes    = ()         => API.get('dishes/');
-export const createDish   = (dish)     => API.post('dishes/', dish);
-export const updateDish   = (id, data) => API.put(`dishes/${id}/`, data);
-export const deleteDish   = (id)       => API.delete(`dishes/${id}/`);
+export const getDishes = () => API.get('dishes/');
+
+export const createDish = (dish) => {
+  const formData = new FormData();
+  formData.append('name', dish.name);
+  formData.append('description', dish.description);
+  formData.append('price', dish.price);
+  if (dish.image) {
+    formData.append('image', dish.image);
+  }
+
+  return API.post('dishes/', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+};
+
+export const updateDish = (id, data) => {
+  const formData = new FormData();
+  formData.append('name', data.name);
+  formData.append('description', data.description);
+  formData.append('price', data.price);
+  if (data.image) {
+    formData.append('image', data.image);
+  }
+
+  return API.put(`dishes/${id}/`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+};
+
+export const deleteDish = (id) => API.delete(`dishes/${id}/`);
 
 // Comments
 export const getComments   = (dishId) => API.get(`comments/?dish=${dishId}`);
 export const createComment = (data)   => API.post('comments/', data);
 export const deleteComment = (id)     => API.delete(`comments/${id}/`);
+export const restoreDish = (id) => API.post(`dishes/${id}/restore/`);
+
 
 // Community photos
 export const getCommunityPhotos = (dishId) => API.get(`community-photos/?dish=${dishId}`);
-export const createCommunityPhoto = (formData) => API.post('community-photos/', formData);
+export const createCommunityPhoto = (formData) =>
+  API.post('community-photos/', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+
+  // upload Dishes
+  export const uploadDishImage = (id, file) => {
+  const formData = new FormData();
+  formData.append('image', file);
+  return API.patch(`dishes/${id}/`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+};

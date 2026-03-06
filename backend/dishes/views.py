@@ -17,6 +17,12 @@ class DishViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminRole]
     parser_classes = [MultiPartParser, FormParser]  # ← handles image uploads
 
+    def destroy(self, request, *args, **kwargs): 
+        dish = self.get_object() 
+        dish.is_deleted = True 
+        dish.save() 
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 class CommunityPhotoViewSet(viewsets.ModelViewSet):
     serializer_class = CommunityPhotoSerializer
     parser_classes = [MultiPartParser, FormParser]

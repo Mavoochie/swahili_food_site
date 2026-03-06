@@ -1,86 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import { getDishes, deleteDish, updateDish, getCommunityPhotos, createCommunityPhoto } from '../api/api';
-import DishForm from './DishForm';
+import React, { useEffect, useState, useRef } from 'react';
+import { Link } from 'react-router-dom';
+import { getDishes, deleteDish, uploadDishImage } from '../api/api';
+import DishForm     from './DishForm';
 import EditDishForm from './EditDishForm';
-import Comments from './Comments';
+import Comments     from './Comments';
 
-// ── Community photos section shown under each dish ──
-function CommunityPhotos({ dishId }) {
-  const [photos, setPhotos]   = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState('');
-  const token = localStorage.getItem('token');
-
-  useEffect(() => {
-    getCommunityPhotos(dishId)
-      .then(res => setPhotos(res.data))
-      .catch(() => {});
-  }, [dishId]);
-
-  const handleUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setLoading(true);
-    setError('');
-    try {
-      const formData = new FormData();
-      formData.append('dish', dishId);
-      formData.append('photo', file);
-      const res = await createCommunityPhoto(formData);
-      setPhotos(prev => [res.data, ...prev]);
-    } catch {
-      setError('Upload failed. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="community-section">
-      <div className="community-header">
-        <span className="community-title">👨‍🍳 Community Cooks</span>
-        <span className="comments-count">{photos.length}</span>
-      </div>
-
-      {/* Photo grid */}
-      {photos.length > 0 && (
-        <div className="community-grid">
-          {photos.map(p => (
-            <div key={p.id} className="community-photo">
-              <img src={p.photo} alt="Community cook" />
-              <span className="community-author">@{p.username}</span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* One-click upload — logged in users only */}
-      {token ? (
-        <div className="community-upload">
-          <label className="community-upload-btn">
-            {loading ? 'Uploading…' : '📷 Share your cook'}
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleUpload}
-              disabled={loading}
-            />
-          </label>
-          {error && <p className="msg-error">{error}</p>}
-        </div>
-      ) : (
-        <p className="comment-login-note">
-          <a href="/login">Sign in</a> to share your cook.
-        </p>
-      )}
-    </div>
-  );
-}
-
-// ── Main DishList ──
 function DishList() {
-  const [dishes, setDishes]       = useState([]);
-  const [editingId, setEditingId] = useState(null);
+  const [dishes, setDishes]         = useState([]);
+  const [editingId, setEditingId]   = useState(null);
+  const fileInputRefs               = useRef({});
+
   const token   = localStorage.getItem('token');
   const role    = localStorage.getItem('role');
   const isAdmin = role === 'admin';
@@ -90,7 +19,7 @@ function DishList() {
   }, []);
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Remove this dish?')) return;
+    if (!window.confirm('Remove this dish from the menu?')) return;
     try {
       await deleteDish(id);
       setDishes(dishes.filter(d => d.id !== id));
@@ -99,20 +28,17 @@ function DishList() {
     }
   };
 
-  // Admin uploads the official dish image
-  const handleDishImageUpload = async (dish, e) => {
+  // Sends image to Django backend — all users will see it
+  const handleImageUpload = async (dishId, e) => {
     const file = e.target.files[0];
     if (!file) return;
     try {
-      const formData = new FormData();
-      formData.append('image', file);
-      formData.append('name', dish.name);
-      formData.append('description', dish.description);
-      formData.append('price', dish.price);
-      const res = await updateDish(dish.id, formData);
-      setDishes(prev => prev.map(d => d.id === dish.id ? res.data : d));
+      const res = await uploadDishImage(dishId, file);
+      setDishes(prev =>
+        prev.map(d => d.id === dishId ? { ...d, image: res.data.image } : d)
+      );
     } catch {
-      alert('Image upload failed.');
+      alert('Failed to upload image. Make sure you are logged in as admin.');
     }
   };
 
@@ -127,11 +53,11 @@ function DishList() {
   return (
     <div className="dishlist">
 
-      {/* Stats bar */}
+      {/* Stats */}
       <div className="dish-stats">
         <div className="stat-item">
           <span className="stat-value">{totalDishes}</span>
-          <span className="stat-label">Total Dishes</span>
+          <span className="stat-label">Dishes</span>
         </div>
         <div className="stat-item">
           <span className="stat-value">{avgPrice} <small>KES</small></span>
@@ -139,15 +65,21 @@ function DishList() {
         </div>
         <div className="stat-item">
           <span className="stat-value">{maxPrice} <small>KES</small></span>
-          <span className="stat-label">Highest Price</span>
+          <span className="stat-label">Top Price</span>
         </div>
       </div>
 
-      <h2 className="section-title">Our Menu</h2>
+      {/* Section header */}
+      <div className="section-intro">
+        <p className="eyebrow">Authentic Coastal Dishes</p>
+        <h2 className="section-title">Our Menu</h2>
+        <div className="section-divider"></div>
+      </div>
 
-      <div className="dish-grid">
+      {/* Dish list */}
+      <div className="dish-list">
         {dishes.map(d => (
-          <div key={d.id} className="dish-card card">
+          <div key={d.id} className="dish-card">
             {editingId === d.id ? (
               <EditDishForm
                 dish={d}
@@ -158,66 +90,85 @@ function DishList() {
                 onCancel={() => setEditingId(null)}
               />
             ) : (
-              <>
-                {/* Official dish image — admin upload only */}
-                <div className="dish-image-wrapper">
-                  {d.image
-                    ? <img src={`http://localhost:8000${d.image}`} alt={d.name} />
-                    : (
-                      <div className="dish-img-placeholder">
-                        <span>🍽</span>
-                        {isAdmin && <p>No photo yet</p>}
-                      </div>
-                    )
-                  }
-                  {isAdmin && (
-                    <label className="dish-upload-btn">
-                      📷 {d.image ? 'Change photo' : 'Add photo'}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handleDishImageUpload(d, e)}
-                      />
-                    </label>
-                  )}
-                </div>
+              <div className="dish-card-inner">
 
-                {/* Dish info */}
-                <div className="dish-body">
-                  <div className="dish-info">
-                    <h3 className="dish-name">{d.name}</h3>
-                    <p className="dish-desc">{d.description}</p>
-                  </div>
-                  <div className="dish-footer">
-                    <span className="dish-price">{d.price} KES</span>
+                {/* LEFT — image + info */}
+                <div className="dish-left">
+                  <div className="dish-image-wrapper">
+                    {d.image
+                      ? <img src={d.image} alt={d.name} />
+                      : (
+                        <div className="dish-img-placeholder">
+                          <span>🍽</span>
+                          <p>No photo yet</p>
+                        </div>
+                      )
+                    }
+                    <span className="dish-tag"></span>
+
+                    <input
+                      type="file"
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      ref={el => fileInputRefs.current[d.id] = el}
+                      onChange={(e) => handleImageUpload(d.id, e)}
+                    />
+
                     {isAdmin && (
-                      <div className="dish-actions">
-                        <button className="btn-secondary" onClick={() => setEditingId(d.id)}>Edit</button>
-                        <button className="btn-danger" onClick={() => handleDelete(d.id)}>Delete</button>
-                      </div>
+                      <button
+                        className="dish-upload-btn"
+                        onClick={() => fileInputRefs.current[d.id]?.click()}
+                      >
+                        📷 {d.image ? 'Change Photo' : 'Add Photo'}
+                      </button>
                     )}
                   </div>
 
-                  <Comments dishId={d.id} />
-                  <CommunityPhotos dishId={d.id} />
+                  <div className="dish-body">
+                    <div className="dish-info">
+                      <h3 className="dish-name">{d.name}</h3>
+                      <p className="dish-desc">{d.description}</p>
+                    </div>
+                    <div className="dish-footer">
+                      <span className="dish-price">{d.price} KES</span>
+                      {isAdmin && (
+                        <div className="dish-actions">
+                          <button className="btn-secondary" onClick={() => setEditingId(d.id)}>
+                            Edit
+                          </button>
+                          <button className="btn-danger" onClick={() => handleDelete(d.id)}>
+                            Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </>
+
+                {/* RIGHT — comments */}
+                <div className="dish-right">
+                  <Comments dishId={d.id} />
+                </div>
+
+              </div>
             )}
           </div>
         ))}
       </div>
 
-      {/* Add dish form — admin only */}
+      {/* Admin: add dish */}
       {isAdmin ? (
         <div className="add-dish-section">
           <h3>Add a New Dish</h3>
           <DishForm onDishAdded={(dish) => setDishes([...dishes, dish])} />
         </div>
-      ) : token ? null : (
+      ) : !token ? (
         <p className="login-prompt">
-          <a href="/login">Sign in</a> to interact with dishes.
+          <Link to="/login">Sign in</Link> or{' '}
+          <Link to="/register">create an account</Link> to join the conversation.
         </p>
-      )}
+      ) : null}
+
     </div>
   );
 }

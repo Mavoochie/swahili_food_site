@@ -5,6 +5,7 @@ const DishForm = ({ onDishAdded }) => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
+  const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -13,12 +14,14 @@ const DishForm = ({ onDishAdded }) => {
     setLoading(true);
     setError('');
     try {
-      const res = await createDish({ name, description, price });
+      const res = await createDish({ name, description, price, image });
       onDishAdded(res.data);
       setName('');
       setDescription('');
       setPrice('');
-    } catch {
+      setImage(null);
+    } catch (err) {
+      console.error(err);
       setError('Failed to add dish. Please try again.');
     } finally {
       setLoading(false);
@@ -60,6 +63,16 @@ const DishForm = ({ onDishAdded }) => {
           value={price}
           onChange={(e) => setPrice(e.target.value)}
           required
+        />
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="dish-image">Image</label>
+        <input
+          id="dish-image"
+          type="file"
+          accept="image/*"
+          onChange={(e) => setImage(e.target.files[0])}
         />
       </div>
 
