@@ -10,7 +10,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 1rem;
-  background: var(--clove);
+  background: var( --gold-dark);
   position: sticky;
   top: 0;
   z-index: 100;
