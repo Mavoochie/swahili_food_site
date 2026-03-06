@@ -104,7 +104,7 @@ function DishList() {
                         </div>
                       )
                     }
-                    <span className="dish-tag"></span>
+                    <span className="dish-tag">Dish</span>
 
                     <input
                       type="file"
