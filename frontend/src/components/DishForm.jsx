@@ -2,17 +2,32 @@ import React, { useState } from 'react';
 import { createDish } from '../api/api';
 
 const DishForm = ({ onDishAdded }) => {
-  const [name, setName] = useState('');
+  const [name, setName]               = useState('');
   const [description, setDescription] = useState('');
-  const [price, setPrice] = useState('');
-  const [image, setImage] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [price, setPrice]             = useState('');
+  const [image, setImage]             = useState(null);
+  const [loading, setLoading]         = useState(false);
+  const [error, setError]             = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
+
+    // Client-side validation
+    if (!name.trim()) {
+      setError('Dish name is required.');
+      return;
+    }
+    if (!description.trim()) {
+      setError('Description is required.');
+      return;
+    }
+    if (!price || parseFloat(price) <= 0) {
+      setError('Please enter a valid price greater than 0.');
+      return;
+    }
+
+    setLoading(true);
     try {
       const res = await createDish({ name, description, price, image });
       onDishAdded(res.data);
@@ -38,7 +53,6 @@ const DishForm = ({ onDishAdded }) => {
           placeholder="e.g. Chicken Biryani"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          required
         />
       </div>
 
@@ -62,7 +76,6 @@ const DishForm = ({ onDishAdded }) => {
           min="0"
           value={price}
           onChange={(e) => setPrice(e.target.value)}
-          required
         />
       </div>
 

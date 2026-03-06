@@ -71,7 +71,7 @@ function DishList() {
 
       {/* Section header */}
       <div className="section-intro">
-        <p className="eyebrow">Authentic Coastal Dishes</p>
+        <p className="eyebrow">Coastal Dishes</p>
         <h2 className="section-title">Our Menu</h2>
         <div className="section-divider"></div>
       </div>
