@@ -2,33 +2,58 @@ import React, { useState } from 'react';
 import { updateDish } from '../api/api';
 
 function EditDishForm({ dish, onUpdated, onCancel }) {
-  const [name, setName]               = useState(dish.name);
-  const [description, setDescription] = useState(dish.description);
-  const [price, setPrice]             = useState(dish.price);
-  const [culturalNotes, setCulturalNotes] = useState(dish.cultural_notes || '');
+  const [name, setName]                         = useState(dish.name);
+  const [description, setDescription]           = useState(dish.description);
+  const [price, setPrice]                       = useState(dish.price);
+  const [culturalNotes, setCulturalNotes]       = useState(dish.cultural_notes || '');
   const [preparationSteps, setPreparationSteps] = useState(dish.preparation_steps || '');
-  const [image, setImage]             = useState(null);
-  const [loading, setLoading]         = useState(false);
-  const [error, setError]             = useState('');
+  const [image, setImage]                       = useState(null);
+  const [loading, setLoading]                   = useState(false);
+  const [error, setError]                       = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    if (!name.trim()) { setError('Dish name is required.'); return; }
-    if (!description.trim()) { setError('Description is required.'); return; }
-    if (!price || parseFloat(price) <= 0) { setError('Please enter a valid price.'); return; }
+    // Client-side validation
+    if (!name.trim()) {
+      setError('Dish name is required.');
+      return;
+    }
+    if (!description.trim()) {
+      setError('Description is required.');
+      return;
+    }
+    if (!price || parseFloat(price) <= 0) {
+      setError('Please enter a valid price greater than 0.');
+      return;
+    }
 
     setLoading(true);
     try {
-      const res = await updateDish(dish.id, {
-        name,
-        description,
-        price,
-        cultural_notes: culturalNotes,
-        preparation_steps: preparationSteps,
-        image,
-      });
+      // Only send fields that have actually changed
+      // This prevents overwriting existing data with empty strings
+      const formData = new FormData();
+
+      if (name !== dish.name)
+        formData.append('name', name);
+
+      if (description !== dish.description)
+        formData.append('description', description);
+
+      if (String(price) !== String(dish.price))
+        formData.append('price', price);
+
+      if (culturalNotes !== (dish.cultural_notes || ''))
+        formData.append('cultural_notes', culturalNotes);
+
+      if (preparationSteps !== (dish.preparation_steps || ''))
+        formData.append('preparation_steps', preparationSteps);
+
+      if (image)
+        formData.append('image', image);
+
+      const res = await updateDish(dish.id, formData);
       onUpdated(res.data);
     } catch {
       setError('Failed to update dish. Please try again.');
