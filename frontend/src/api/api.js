@@ -17,7 +17,7 @@ export const getMe        = ()      => API.get('users/me/');
 // Dishes
 export const getDishes = () => API.get('dishes/');
 
-export const getDish = (id) => API.get(`dishes/${id}/`);  
+export const getDish = (id) => API.get(`dishes/${id}/`);  // ← added for DishDetail page
 
 export const createDish = (dish) => {
   const formData = new FormData();
@@ -33,16 +33,10 @@ export const createDish = (dish) => {
   });
 };
 
-export const updateDish = (id, data) => {
-  const formData = new FormData();
-  formData.append('name', data.name);
-  formData.append('description', data.description);
-  formData.append('price', data.price);
-  if (data.cultural_notes)     formData.append('cultural_notes', data.cultural_notes);
-  if (data.preparation_steps)  formData.append('preparation_steps', data.preparation_steps);
-  if (data.image)              formData.append('image', data.image);
-
-  return API.put(`dishes/${id}/`, formData, {
+export const updateDish = (id, formData) => {
+  // Accepts a FormData directly from EditDishForm
+  // Uses PATCH so only changed fields are sent — prevents overwriting existing data
+  return API.patch(`dishes/${id}/`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
 };
