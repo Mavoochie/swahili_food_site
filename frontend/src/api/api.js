@@ -17,14 +17,16 @@ export const getMe        = ()      => API.get('users/me/');
 // Dishes
 export const getDishes = () => API.get('dishes/');
 
+export const getDish = (id) => API.get(`dishes/${id}/`);  
+
 export const createDish = (dish) => {
   const formData = new FormData();
   formData.append('name', dish.name);
   formData.append('description', dish.description);
   formData.append('price', dish.price);
-  if (dish.image) {
-    formData.append('image', dish.image);
-  }
+  if (dish.cultural_notes)     formData.append('cultural_notes', dish.cultural_notes);
+  if (dish.preparation_steps)  formData.append('preparation_steps', dish.preparation_steps);
+  if (dish.image)              formData.append('image', dish.image);
 
   return API.post('dishes/', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
@@ -36,23 +38,22 @@ export const updateDish = (id, data) => {
   formData.append('name', data.name);
   formData.append('description', data.description);
   formData.append('price', data.price);
-  if (data.image) {
-    formData.append('image', data.image);
-  }
+  if (data.cultural_notes)     formData.append('cultural_notes', data.cultural_notes);
+  if (data.preparation_steps)  formData.append('preparation_steps', data.preparation_steps);
+  if (data.image)              formData.append('image', data.image);
 
   return API.put(`dishes/${id}/`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
 };
 
-export const deleteDish = (id) => API.delete(`dishes/${id}/`);
+export const deleteDish  = (id) => API.delete(`dishes/${id}/`);
+export const restoreDish = (id) => API.post(`dishes/${id}/restore/`);
 
 // Comments
 export const getComments   = (dishId) => API.get(`comments/?dish=${dishId}`);
 export const createComment = (data)   => API.post('comments/', data);
 export const deleteComment = (id)     => API.delete(`comments/${id}/`);
-export const restoreDish = (id) => API.post(`dishes/${id}/restore/`);
-
 
 // Community photos
 export const getCommunityPhotos = (dishId) => API.get(`community-photos/?dish=${dishId}`);
@@ -61,8 +62,8 @@ export const createCommunityPhoto = (formData) =>
     headers: { 'Content-Type': 'multipart/form-data' },
   });
 
-  // upload Dishes
-  export const uploadDishImage = (id, file) => {
+// Upload dish image
+export const uploadDishImage = (id, file) => {
   const formData = new FormData();
   formData.append('image', file);
   return API.patch(`dishes/${id}/`, formData, {

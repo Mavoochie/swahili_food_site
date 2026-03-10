@@ -3,25 +3,25 @@ import {
   BrowserRouter as Router, Routes, Route,
   Link, NavLink, useNavigate, Navigate
 } from 'react-router-dom';
-import DishList  from './components/DishList';
-import Login     from './components/Login';
-import Register  from './components/Register';
-import Report    from './components/Report';
+import DishList   from './components/DishList';
+import DishDetail from './components/DishDetail';
+import Login      from './components/Login';
+import Register   from './components/Register';
+import Report     from './components/Report';
 import './App.css';
 
-//  Session timeout settings 
-const TIMEOUT_DURATION = 30 * 60 * 1000;  // 30 minutes of inactivity
+// ── Session timeout settings ──────────────────────
+const TIMEOUT_DURATION = 30 * 60 * 1000;  // 30 minutes inactivity
 const WARNING_BEFORE   =  2 * 60 * 1000;  // warn 2 minutes before logout
 
-//  Protected Route 
-// Redirects to /login if user has no token
+// ── Protected Route ───────────────────────────────
 function ProtectedRoute({ children }) {
   const token = localStorage.getItem('token');
   if (!token) return <Navigate to="/login" replace />;
   return children;
 }
 
-// Session Timeout Hook 
+// ── Session Timeout Hook ──────────────────────────
 function useSessionTimeout(onLogout) {
   const [showWarning, setShowWarning] = useState(false);
   const [countdown, setCountdown]     = useState(120);
@@ -50,13 +50,11 @@ function useSessionTimeout(onLogout) {
     clearAllTimers();
     setShowWarning(false);
 
-    // show warning 2 minutes before logout
     warningTimer.current = setTimeout(() => {
       setShowWarning(true);
       startCountdown();
     }, TIMEOUT_DURATION - WARNING_BEFORE);
 
-    // auto logout after 30 minutes
     logoutTimer.current = setTimeout(() => {
       setShowWarning(false);
       onLogout();
@@ -81,7 +79,7 @@ function useSessionTimeout(onLogout) {
   return { showWarning, countdown, resetTimer };
 }
 
-// Timeout Warning Modal 
+// ── Timeout Warning Modal ─────────────────────────
 function TimeoutWarning({ countdown, onStayLoggedIn, onLogoutNow }) {
   const minutes = Math.floor(countdown / 60);
   const seconds = String(countdown % 60).padStart(2, '0');
@@ -107,7 +105,7 @@ function TimeoutWarning({ countdown, onStayLoggedIn, onLogoutNow }) {
   );
 }
 
-//  Navbar
+// ── Navbar ────────────────────────────────────────
 function Navbar({ onLogout }) {
   const navigate = useNavigate();
   const token    = localStorage.getItem('token');
@@ -144,7 +142,7 @@ function Navbar({ onLogout }) {
   );
 }
 
-//  Home 
+// ── Home ─────────────────────────────────────────
 function Home() {
   const [heroBg, setHeroBg] = useState(null);
 
@@ -200,7 +198,6 @@ function AppContent() {
     <>
       <Navbar onLogout={handleLogout} />
 
-      {/* Timeout warning — only visible when user is idle near the limit */}
       {showWarning && localStorage.getItem('token') && (
         <TimeoutWarning
           countdown={countdown}
@@ -211,14 +208,13 @@ function AppContent() {
 
       <Routes>
         {/* Public routes */}
-        <Route path="/"         element={<Home />} />
-        <Route path="/login"    element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        <Route path="/"           element={<Home />} />
+        <Route path="/login"      element={<Login />} />
+        <Route path="/register"   element={<Register />} />
+        <Route path="/dishes"     element={<DishList />} />
+        <Route path="/dishes/:id" element={<DishDetail />} />
 
-        {/* Protected routes — redirect to /login if not logged in */}
-        <Route path="/dishes" element={
-          <ProtectedRoute><DishList /></ProtectedRoute>
-        } />
+        {/* Protected routes */}
         <Route path="/report" element={
           <ProtectedRoute><Report /></ProtectedRoute>
         } />

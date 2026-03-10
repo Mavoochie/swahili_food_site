@@ -6,9 +6,11 @@ import EditDishForm from './EditDishForm';
 import Comments     from './Comments';
 
 function DishList() {
-  const [dishes, setDishes]         = useState([]);
-  const [editingId, setEditingId]   = useState(null);
-  const fileInputRefs               = useRef({});
+  const [dishes, setDishes]           = useState([]);
+  const [editingId, setEditingId]     = useState(null);
+  const [confirmId, setConfirmId]     = useState(null);
+  const [confirmName, setConfirmName] = useState('');
+  const fileInputRefs                 = useRef({});
 
   const token   = localStorage.getItem('token');
   const role    = localStorage.getItem('role');
@@ -18,17 +20,29 @@ function DishList() {
     getDishes().then(res => setDishes(res.data));
   }, []);
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Remove this dish from the menu?')) return;
+  // Delete confirmation
+  const handleDeleteClick = (id, name) => {
+    setConfirmId(id);
+    setConfirmName(name);
+  };
+
+  const handleConfirmDelete = async () => {
     try {
-      await deleteDish(id);
-      setDishes(dishes.filter(d => d.id !== id));
+      await deleteDish(confirmId);
+      setDishes(dishes.filter(d => d.id !== confirmId));
     } catch {
       alert('Failed to delete dish.');
+    } finally {
+      setConfirmId(null);
+      setConfirmName('');
     }
   };
 
-  // Sends image to Django backend — all users will see it
+  const handleCancelDelete = () => {
+    setConfirmId(null);
+    setConfirmName('');
+  };
+
   const handleImageUpload = async (dishId, e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -52,6 +66,24 @@ function DishList() {
 
   return (
     <div className="dishlist">
+
+      {/* ── Delete Confirmation Modal ── */}
+      {confirmId && (
+        <div className="timeout-overlay">
+          <div className="timeout-modal card">
+            <span className="timeout-icon">🗑</span>
+            <h3 className="timeout-title">Delete Dish</h3>
+            <p className="timeout-message">
+              Are you sure you want to remove <strong>{confirmName}</strong> from the menu?
+            </p>
+            <p className="timeout-subtext">This action cannot be undone.</p>
+            <div className="timeout-actions">
+              <button className="btn-secondary" onClick={handleCancelDelete}>Cancel</button>
+              <button className="btn-danger"    onClick={handleConfirmDelete}>Yes, Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="dish-stats">
@@ -131,16 +163,22 @@ function DishList() {
                     </div>
                     <div className="dish-footer">
                       <span className="dish-price">{d.price} KES</span>
-                      {isAdmin && (
-                        <div className="dish-actions">
-                          <button className="btn-secondary" onClick={() => setEditingId(d.id)}>
-                            Edit
-                          </button>
-                          <button className="btn-danger" onClick={() => handleDelete(d.id)}>
-                            Delete
-                          </button>
-                        </div>
-                      )}
+                      <div className="dish-actions">
+                        {/* View Details — visible to everyone */}
+                        <Link to={`/dishes/${d.id}`} className="btn-secondary">
+                          View Details
+                        </Link>
+                        {isAdmin && (
+                          <>
+                            <button className="btn-secondary" onClick={() => setEditingId(d.id)}>
+                              Edit
+                            </button>
+                            <button className="btn-danger" onClick={() => handleDeleteClick(d.id, d.name)}>
+                              Delete
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
