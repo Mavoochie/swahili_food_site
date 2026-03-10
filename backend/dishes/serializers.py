@@ -3,13 +3,22 @@ from .models import Dish, CommunityPhoto
 
 class DishSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Dish
-        fields = ['id', 'name', 'description', 'price', 'image', 'created_at']
+        model  = Dish
+        fields = [
+            'id',
+            'name',
+            'description',
+            'price',
+            'image',
+            'cultural_notes',      
+            'preparation_steps',   
+            'created_at',
+        ]
 
 class CommunityPhotoSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='user.username', read_only=True)
 
     class Meta:
-        model = CommunityPhoto
+        model  = CommunityPhoto
         fields = ['id', 'dish', 'username', 'photo', 'caption', 'created_at']
         read_only_fields = ['user', 'created_at']
