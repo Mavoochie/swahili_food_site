@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   BrowserRouter as Router, Routes, Route,
   Link, NavLink, useNavigate, Navigate
@@ -9,7 +9,11 @@ import Register  from './components/Register';
 import Report    from './components/Report';
 import './App.css';
 
-// ── Protected Route ──────────────────────────────
+//  Session timeout settings 
+const TIMEOUT_DURATION = 30 * 60 * 1000;  // 30 minutes of inactivity
+const WARNING_BEFORE   =  2 * 60 * 1000;  // warn 2 minutes before logout
+
+//  Protected Route 
 // Redirects to /login if user has no token
 function ProtectedRoute({ children }) {
   const token = localStorage.getItem('token');
@@ -17,17 +21,101 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
-// ── Navbar ───────────────────────────────────────
-function Navbar() {
+// Session Timeout Hook 
+function useSessionTimeout(onLogout) {
+  const [showWarning, setShowWarning] = useState(false);
+  const [countdown, setCountdown]     = useState(120);
+  const logoutTimer                   = useRef(null);
+  const warningTimer                  = useRef(null);
+  const countdownInterval             = useRef(null);
+
+  const clearAllTimers = () => {
+    clearTimeout(logoutTimer.current);
+    clearTimeout(warningTimer.current);
+    clearInterval(countdownInterval.current);
+  };
+
+  const startCountdown = useCallback(() => {
+    setCountdown(120);
+    countdownInterval.current = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) { clearInterval(countdownInterval.current); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+  }, []);
+
+  const resetTimer = useCallback(() => {
+    if (!localStorage.getItem('token')) return;
+    clearAllTimers();
+    setShowWarning(false);
+
+    // show warning 2 minutes before logout
+    warningTimer.current = setTimeout(() => {
+      setShowWarning(true);
+      startCountdown();
+    }, TIMEOUT_DURATION - WARNING_BEFORE);
+
+    // auto logout after 30 minutes
+    logoutTimer.current = setTimeout(() => {
+      setShowWarning(false);
+      onLogout();
+    }, TIMEOUT_DURATION);
+  }, [onLogout, startCountdown]);
+
+  useEffect(() => {
+    const events = ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart', 'click'];
+    const handleActivity = () => resetTimer();
+
+    if (localStorage.getItem('token')) {
+      resetTimer();
+      events.forEach(e => window.addEventListener(e, handleActivity));
+    }
+
+    return () => {
+      clearAllTimers();
+      events.forEach(e => window.removeEventListener(e, handleActivity));
+    };
+  }, [resetTimer]);
+
+  return { showWarning, countdown, resetTimer };
+}
+
+// Timeout Warning Modal 
+function TimeoutWarning({ countdown, onStayLoggedIn, onLogoutNow }) {
+  const minutes = Math.floor(countdown / 60);
+  const seconds = String(countdown % 60).padStart(2, '0');
+
+  return (
+    <div className="timeout-overlay">
+      <div className="timeout-modal card">
+        <span className="timeout-icon">⏱</span>
+        <h3 className="timeout-title">Session Expiring Soon</h3>
+        <p className="timeout-message">
+          You have been inactive. Your session will expire in:
+        </p>
+        <p className="timeout-countdown">{minutes}:{seconds}</p>
+        <p className="timeout-subtext">
+          Click below to stay logged in, otherwise you will be logged out automatically.
+        </p>
+        <div className="timeout-actions">
+          <button className="btn-primary" onClick={onStayLoggedIn}>Stay Logged In</button>
+          <button className="btn-logout"  onClick={onLogoutNow}>Logout Now</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+//  Navbar
+function Navbar({ onLogout }) {
   const navigate = useNavigate();
   const token    = localStorage.getItem('token');
   const role     = localStorage.getItem('role');
   const username = localStorage.getItem('username');
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('username');
-    localStorage.removeItem('role');
+    onLogout();
     navigate('/login');
   };
 
@@ -56,7 +144,7 @@ function Navbar() {
   );
 }
 
-// ── Home ─────────────────────────────────────────
+//  Home 
 function Home() {
   const [heroBg, setHeroBg] = useState(null);
 
@@ -96,10 +184,31 @@ function Home() {
 }
 
 // ── App / Routes ──────────────────────────────────
-function App() {
+function AppContent() {
+  const navigate = useNavigate();
+
+  const handleLogout = useCallback(() => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('username');
+    localStorage.removeItem('role');
+    navigate('/login');
+  }, [navigate]);
+
+  const { showWarning, countdown, resetTimer } = useSessionTimeout(handleLogout);
+
   return (
-    <Router>
-      <Navbar />
+    <>
+      <Navbar onLogout={handleLogout} />
+
+      {/* Timeout warning — only visible when user is idle near the limit */}
+      {showWarning && localStorage.getItem('token') && (
+        <TimeoutWarning
+          countdown={countdown}
+          onStayLoggedIn={resetTimer}
+          onLogoutNow={handleLogout}
+        />
+      )}
+
       <Routes>
         {/* Public routes */}
         <Route path="/"         element={<Home />} />
@@ -114,6 +223,14 @@ function App() {
           <ProtectedRoute><Report /></ProtectedRoute>
         } />
       </Routes>
+    </>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <AppContent />
     </Router>
   );
 }

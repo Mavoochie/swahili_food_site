@@ -236,6 +236,62 @@
 .login-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 .login-footer { text-align: center; font-size: 0.88rem; color: var(--text-muted); }
 
+/* ── Session Timeout Modal ─────────────────────── */
+.timeout-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.timeout-modal {
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  padding: 36px 30px;
+  border-radius: 12px;
+}
+
+.timeout-icon {
+  font-size: 2.5rem;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.timeout-title {
+  margin: 0 0 10px;
+}
+
+.timeout-message {
+  margin-bottom: 8px;
+}
+
+.timeout-countdown {
+  font-size: 2.8rem;
+  font-weight: bold;
+  color: #c0392b;
+  margin: 10px 0;
+  font-family: monospace;
+}
+
+.timeout-subtext {
+  font-size: 0.88rem;
+  color: #888;
+  margin-bottom: 24px;
+}
+
+.timeout-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
 /* STATS */
 .dish-stats {
   display: grid;
