@@ -120,7 +120,7 @@ function Navbar({ onLogout }) {
   return (
     <nav className="navbar">
       <Link to="/" className="navbar-brand">
-        Swahili<span>Eats</span>
+        Swahili<span>Cuisine</span>
       </Link>
       <NavLink to="/">Home</NavLink>
       <NavLink to="/dishes">Dishes</NavLink>
@@ -142,7 +142,7 @@ function Navbar({ onLogout }) {
   );
 }
 
-// ── Home ─────────────────────────────────────────
+// Home
 function Home() {
   const [heroBg, setHeroBg] = useState(null);
 
